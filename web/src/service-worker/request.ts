@@ -44,7 +44,7 @@ export const handleRequest = async (request: URL | Request) => {
     const response = await fetch(request, { signal: cancelToken.signal });
 
     assertResponse(response);
-    put(cacheKey, response);
+    await put(cacheKey, response);
 
     return response;
   } catch (error) {

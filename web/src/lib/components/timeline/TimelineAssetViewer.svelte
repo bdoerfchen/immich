@@ -11,6 +11,7 @@
   import { handlePromiseError } from '$lib/utils';
   import { updateStackedAssetInTimeline, updateUnstackedAssetInTimeline } from '$lib/utils/actions';
   import { navigateToAsset } from '$lib/utils/asset-utils';
+  import { handleErrorAsync } from '$lib/utils/handle-error';
   import { navigate } from '$lib/utils/navigation';
   import { toTimelineAsset } from '$lib/utils/timeline-util';
   import { type AlbumResponseDto, type AssetResponseDto, type PersonResponseDto, getAssetInfo } from '@immich/sdk';
@@ -41,8 +42,10 @@
   const getNextAsset = async (currentAsset: AssetResponseDto, preload: boolean = true) => {
     const earlierTimelineAsset = await timelineManager.getEarlierAsset(currentAsset);
     if (earlierTimelineAsset) {
-      const asset = await assetCacheManager.getAsset({ ...authManager.params, id: earlierTimelineAsset.id });
-      if (preload) {
+      const asset = await handleErrorAsync(() =>
+        assetCacheManager.getAsset({ ...authManager.params, id: earlierTimelineAsset.id }),
+      );
+      if (preload && asset) {
         // also pre-cache an extra one, to pre-cache these assetInfos for the next nav after this one is complete
         void getNextAsset(asset, false);
       }
@@ -53,8 +56,10 @@
   const getPreviousAsset = async (currentAsset: AssetResponseDto, preload: boolean = true) => {
     const laterTimelineAsset = await timelineManager.getLaterAsset(currentAsset);
     if (laterTimelineAsset) {
-      const asset = await assetCacheManager.getAsset({ ...authManager.params, id: laterTimelineAsset.id });
-      if (preload) {
+      const asset = await handleErrorAsync(() =>
+        assetCacheManager.getAsset({ ...authManager.params, id: laterTimelineAsset.id }),
+      );
+      if (preload && asset) {
         // also pre-cache an extra one, to pre-cache these assetInfos for the next nav after this one is complete
         void getPreviousAsset(asset, false);
       }

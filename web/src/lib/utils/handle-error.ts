@@ -19,12 +19,15 @@ export function getServerErrorMessage(error: unknown) {
   return data?.message || error.message;
 }
 
-export function handleError(error: unknown, message: string) {
+export function handleError(error: unknown, message?: string) {
   if ((error as Error)?.name === 'AbortError') {
     return;
   }
+  const err = error instanceof Error ? error : new Error(String(error));
 
-  console.error(`[handleError]: ${message}`, error, (error as Error)?.stack);
+  const msg = message || err.message;
+
+  console.error(`[handleError]: ${msg}`, error, err?.stack);
 
   try {
     let serverMessage = getServerErrorMessage(error);
@@ -32,7 +35,7 @@ export function handleError(error: unknown, message: string) {
       serverMessage = `${String(serverMessage).slice(0, 75)}\n(Immich Server Error)`;
     }
 
-    const errorMessage = serverMessage || message;
+    const errorMessage = serverMessage || msg;
 
     toastManager.danger(errorMessage);
 
@@ -40,5 +43,14 @@ export function handleError(error: unknown, message: string) {
   } catch (error) {
     console.error(error);
     return message;
+  }
+}
+
+export async function handleErrorAsync<T>(fn: () => Promise<T>, message?: string): Promise<T | undefined> {
+  try {
+    return await fn();
+  } catch (error: unknown) {
+    handleError(error, message);
+    return undefined;
   }
 }

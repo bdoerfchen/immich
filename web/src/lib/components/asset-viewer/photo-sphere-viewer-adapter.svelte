@@ -111,7 +111,7 @@
     viewer.animate({ zoom: $photoZoomState.currentZoom > 1 ? 50 : 83.3, speed: 250 });
   };
 
-  const handleReady = () => eventManager.emit('AssetViewerFree');
+  const handleReady = () => eventManager.emit('AssetViewerReady');
 
   let hasChangedResolution: boolean = false;
   onMount(() => {

@@ -1,3 +1,5 @@
+import { handleError } from '$lib/utils/handle-error';
+
 /**
  * Tracks the state of asynchronous invocations to handle race conditions and stale operations.
  * This class helps manage concurrent operations by tracking which invocations are active
@@ -55,6 +57,8 @@ export class InvocationTracker {
     const invocation = this.startInvocation();
     try {
       return await invocable();
+    } catch (error: unknown) {
+      handleError(error);
     } finally {
       invocation.endInvocation();
     }
