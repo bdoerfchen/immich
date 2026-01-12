@@ -39,6 +39,8 @@ export type Events = {
   AlbumUpdate: [AlbumResponseDto];
   AlbumDelete: [AlbumResponseDto];
   AlbumShare: [];
+  AlbumUserUpdate: [{ albumId: string; userId: string }];
+  AlbumUserDelete: [{ albumId: string; userId: string }];
 
   PersonUpdate: [PersonResponseDto];
 

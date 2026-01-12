@@ -36,7 +36,6 @@
   import { TimelineManager } from '$lib/managers/timeline-manager/timeline-manager.svelte';
   import type { TimelineAsset } from '$lib/managers/timeline-manager/types';
   import AlbumOptionsModal from '$lib/modals/AlbumOptionsModal.svelte';
-  import AlbumShareModal from '$lib/modals/AlbumShareModal.svelte';
   import AlbumUsersModal from '$lib/modals/AlbumUsersModal.svelte';
   import SharedLinkCreateModal from '$lib/modals/SharedLinkCreateModal.svelte';
   import {
@@ -328,7 +327,7 @@
   };
 
   const handleOptions = async () => {
-    const result = await modalManager.show(AlbumOptionsModal, { album, order: albumOrder, user: $user });
+    const result = await modalManager.show(AlbumOptionsModal, { album });
 
     if (!result) {
       return;
@@ -337,10 +336,7 @@
     switch (result.action) {
       case 'changeOrder': {
         albumOrder = result.order;
-        break;
-      }
-      case 'shareUser': {
-        await modalManager.show(AlbumShareModal, { album });
+        await refreshAlbum();
         break;
       }
       case 'refreshAlbum': {
@@ -366,7 +362,15 @@
   const { AddAssets, Upload } = $derived(getAlbumAssetsActions($t, album, timelineInteraction.selectedAssets));
 </script>
 
-<OnEvents {onSharedLinkCreate} {onAlbumDelete} {onAlbumAddAssets} {onAlbumShare} />
+<OnEvents
+  {onSharedLinkCreate}
+  onSharedLinkDelete={refreshAlbum}
+  {onAlbumDelete}
+  {onAlbumAddAssets}
+  {onAlbumShare}
+  onAlbumUserUpdate={refreshAlbum}
+  onAlbumUserDelete={refreshAlbum}
+/>
 <CommandPaletteDefaultProvider name={$t('album')} actions={[AddAssets, Upload]} />
 
 <div class="flex overflow-hidden" use:scrollMemoryClearer={{ routeStartsWith: AppRoute.ALBUMS }}>
