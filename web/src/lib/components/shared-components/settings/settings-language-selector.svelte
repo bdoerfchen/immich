@@ -39,7 +39,7 @@
   {#if showSettingDescription}
     <div>
       <div class="flex h-6.5 place-items-center gap-1">
-        <Label>{$t('language')}</Label>
+        <Label size="small">{$t('language')}</Label>
       </div>
 
       <Text size="small" color="muted">{$t('language_setting_description')}</Text>
