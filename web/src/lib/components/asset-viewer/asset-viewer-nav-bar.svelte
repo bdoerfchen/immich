@@ -116,16 +116,14 @@
   const { Share, Download, SharedLinkDownload, Offline, Favorite, Unfavorite, PlayMotionPhoto, StopMotionPhoto, Info } =
     $derived(getAssetActions($t, asset));
 
-  let showEditorButton = $derived(
-    isOwner &&
-      asset.type === AssetTypeEnum.Image &&
-      !(
-        asset.exifInfo?.projectionType === ProjectionType.EQUIRECTANGULAR ||
-        (asset.originalPath && asset.originalPath.toLowerCase().endsWith('.insp'))
-      ) &&
-      !(asset.originalPath && asset.originalPath.toLowerCase().endsWith('.gif')) &&
-      !(asset.originalPath && asset.originalPath.toLowerCase().endsWith('.svg')) &&
-      !asset.livePhotoVideoId,
+  const editorDisabled = $derived(
+    isOwner ||
+      asset.type !== AssetTypeEnum.Image ||
+      asset.livePhotoVideoId ||
+      (asset.exifInfo?.projectionType === ProjectionType.EQUIRECTANGULAR &&
+        asset.originalPath.toLowerCase().endsWith('.insp')) ||
+      asset.originalPath.toLowerCase().endsWith('.gif') ||
+      asset.originalPath.toLowerCase().endsWith('.svg'),
   );
 </script>
 
@@ -179,7 +177,7 @@
       <RatingAction {asset} {onAction} />
     {/if}
 
-    {#if showEditorButton}
+    {#if !editorDisabled}
       <EditAction onAction={onEdit} />
     {/if}
 
