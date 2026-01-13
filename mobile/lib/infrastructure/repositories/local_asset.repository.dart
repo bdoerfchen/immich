@@ -21,10 +21,11 @@ class DriftLocalAssetRepository extends DriftDatabaseRepository {
         _db.localAssetEntity.checksum.equalsExp(_db.remoteAssetEntity.checksum),
         useColumns: false,
       ),
+      leftOuterJoin(_db.assetEditEntity, _db.assetEditEntity.assetId.equalsExp(_db.remoteAssetEntity.id)),
     ])..where(_db.localAssetEntity.id.equals(id));
 
     return query.map((row) {
-      final asset = row.readTable(_db.localAssetEntity).toDto();
+      final asset = row.readTable(_db.localAssetEntity).toDto(row.readTableOrNull(_db.assetEditEntity) != null);
       return asset.copyWith(remoteId: row.read(_db.remoteAssetEntity.id));
     });
   }
@@ -32,9 +33,14 @@ class DriftLocalAssetRepository extends DriftDatabaseRepository {
   Future<LocalAsset?> get(String id) => _assetSelectable(id).getSingleOrNull();
 
   Future<List<LocalAsset?>> getByChecksum(String checksum) {
-    final query = _db.localAssetEntity.select()..where((lae) => lae.checksum.equals(checksum));
+    final query = _db.localAssetEntity.select().join([
+      leftOuterJoin(_db.remoteAssetEntity, _db.localAssetEntity.checksum.equalsExp(_db.remoteAssetEntity.checksum)),
+      leftOuterJoin(_db.assetEditEntity, _db.assetEditEntity.assetId.equalsExp(_db.remoteAssetEntity.id)),
+    ])..where(_db.localAssetEntity.checksum.equals(checksum));
 
-    return query.map((row) => row.toDto()).get();
+    return query
+        .map((row) => row.readTable(_db.localAssetEntity).toDto(row.readTableOrNull(_db.assetEditEntity) != null))
+        .get();
   }
 
   Stream<LocalAsset?> watch(String id) => _assetSelectable(id).watchSingleOrNull();
@@ -68,9 +74,14 @@ class DriftLocalAssetRepository extends DriftDatabaseRepository {
   }
 
   Future<LocalAsset?> getById(String id) {
-    final query = _db.localAssetEntity.select()..where((lae) => lae.id.equals(id));
+    final query = _db.localAssetEntity.select().join([
+      leftOuterJoin(_db.remoteAssetEntity, _db.localAssetEntity.checksum.equalsExp(_db.remoteAssetEntity.checksum)),
+      leftOuterJoin(_db.assetEditEntity, _db.assetEditEntity.assetId.equalsExp(_db.remoteAssetEntity.id)),
+    ])..where(_db.localAssetEntity.id.equals(id));
 
-    return query.map((row) => row.toDto()).getSingleOrNull();
+    return query
+        .map((row) => row.readTable(_db.localAssetEntity).toDto(row.readTableOrNull(_db.assetEditEntity) != null))
+        .getSingleOrNull();
   }
 
   Future<int> getCount() {
@@ -112,6 +123,11 @@ class DriftLocalAssetRepository extends DriftDatabaseRepository {
           await (_db.select(_db.localAlbumAssetEntity).join([
                 innerJoin(_db.localAlbumEntity, _db.localAlbumAssetEntity.albumId.equalsExp(_db.localAlbumEntity.id)),
                 innerJoin(_db.localAssetEntity, _db.localAlbumAssetEntity.assetId.equalsExp(_db.localAssetEntity.id)),
+                leftOuterJoin(
+                  _db.remoteAssetEntity,
+                  _db.localAssetEntity.checksum.equalsExp(_db.remoteAssetEntity.checksum),
+                ),
+                leftOuterJoin(_db.assetEditEntity, _db.assetEditEntity.assetId.equalsExp(_db.remoteAssetEntity.id)),
               ])..where(
                 _db.localAlbumEntity.backupSelection.equalsValue(BackupSelection.selected) &
                     _db.localAssetEntity.checksum.isIn(slice),
@@ -121,7 +137,7 @@ class DriftLocalAssetRepository extends DriftDatabaseRepository {
       for (final row in rows) {
         final albumId = row.readTable(_db.localAlbumAssetEntity).albumId;
         final assetData = row.readTable(_db.localAssetEntity);
-        final asset = assetData.toDto();
+        final asset = assetData.toDto(row.readTableOrNull(_db.assetEditEntity) != null);
         (result[albumId] ??= <LocalAsset>[]).add(asset);
       }
     }
@@ -147,6 +163,7 @@ class DriftLocalAssetRepository extends DriftDatabaseRepository {
 
     final query = _db.localAssetEntity.select().join([
       innerJoin(_db.remoteAssetEntity, _db.localAssetEntity.checksum.equalsExp(_db.remoteAssetEntity.checksum)),
+      leftOuterJoin(_db.assetEditEntity, _db.assetEditEntity.assetId.equalsExp(_db.remoteAssetEntity.id)),
     ]);
 
     Expression<bool> whereClause =
@@ -170,6 +187,8 @@ class DriftLocalAssetRepository extends DriftDatabaseRepository {
     query.where(whereClause);
 
     final rows = await query.get();
-    return rows.map((row) => row.readTable(_db.localAssetEntity).toDto()).toList();
+    return rows
+        .map((row) => row.readTable(_db.localAssetEntity).toDto(row.readTableOrNull(_db.assetEditEntity) != null))
+        .toList();
   }
 }

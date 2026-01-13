@@ -26,6 +26,7 @@ class LocalAsset extends BaseAsset {
     this.adjustmentTime,
     this.latitude,
     this.longitude,
+    required super.isEdited,
   }) : remoteAssetId = remoteId;
 
   @override
@@ -101,6 +102,7 @@ class LocalAsset extends BaseAsset {
     DateTime? adjustmentTime,
     double? latitude,
     double? longitude,
+    bool? isEdited,
   }) {
     return LocalAsset(
       id: id ?? this.id,
@@ -118,6 +120,7 @@ class LocalAsset extends BaseAsset {
       adjustmentTime: adjustmentTime ?? this.adjustmentTime,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      isEdited: isEdited ?? this.isEdited,
     );
   }
 }

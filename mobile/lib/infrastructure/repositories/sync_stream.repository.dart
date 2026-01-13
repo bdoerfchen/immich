@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
 import 'package:immich_mobile/domain/models/album/album.model.dart';
+import 'package:immich_mobile/domain/models/asset/asset_edit.model.dart';
 import 'package:immich_mobile/domain/models/asset/base_asset.model.dart';
 import 'package:immich_mobile/domain/models/memory.model.dart';
 import 'package:immich_mobile/domain/models/user.model.dart';
 import 'package:immich_mobile/domain/models/user_metadata.model.dart';
+import 'package:immich_mobile/infrastructure/entities/asset_edit.entity.drift.dart';
 import 'package:immich_mobile/infrastructure/entities/asset_face.entity.drift.dart';
 import 'package:immich_mobile/infrastructure/entities/auth_user.entity.drift.dart';
 import 'package:immich_mobile/infrastructure/entities/exif.entity.drift.dart';
@@ -24,8 +26,8 @@ import 'package:immich_mobile/infrastructure/entities/user_metadata.entity.drift
 import 'package:immich_mobile/infrastructure/repositories/db.repository.dart';
 import 'package:immich_mobile/infrastructure/utils/exif.converter.dart';
 import 'package:logging/logging.dart';
-import 'package:openapi/api.dart' as api show AssetVisibility, AlbumUserRole, UserMetadataKey;
-import 'package:openapi/api.dart' hide AssetVisibility, AlbumUserRole, UserMetadataKey;
+import 'package:openapi/api.dart' as api show AssetVisibility, AlbumUserRole, UserMetadataKey, AssetEditAction;
+import 'package:openapi/api.dart' hide AssetVisibility, AlbumUserRole, UserMetadataKey, AssetEditAction;
 
 class SyncStreamRepository extends DriftDatabaseRepository {
   final Logger _logger = Logger('DriftSyncStreamRepository');
@@ -208,6 +210,40 @@ class SyncStreamRepository extends DriftDatabaseRepository {
       });
     } catch (error, stack) {
       _logger.severe('Error: updateAssetsV1 - $debugLabel', error, stack);
+      rethrow;
+    }
+  }
+
+  Future<void> updateAssetEditsV1(Iterable<SyncAssetEditV1> data) async {
+    print('Updating asset edits V1: ${data.length} items');
+    try {
+      await _db.batch((batch) {
+        for (final edit in data) {
+          final companion = AssetEditEntityCompanion(
+            id: Value(edit.id),
+            assetId: Value(edit.assetId),
+            action: Value(edit.action.toAssetEditAction()),
+            parameters: Value(edit.parameters as Map<String, Object?>),
+          );
+
+          batch.insert(_db.assetEditEntity, companion, onConflict: DoUpdate((_) => companion));
+        }
+      });
+    } catch (error, stack) {
+      _logger.severe('Error: updateAssetEditsV1', error, stack);
+      rethrow;
+    }
+  }
+
+  Future<void> deleteAssetEditsV1(Iterable<SyncAssetEditDeleteV1> data) async {
+    try {
+      await _db.batch((batch) {
+        for (final edit in data) {
+          batch.deleteWhere(_db.assetEditEntity, (row) => row.assetId.equals(edit.assetId));
+        }
+      });
+    } catch (error, stack) {
+      _logger.severe('Error: deleteAssetEditsV1', error, stack);
       rethrow;
     }
   }
@@ -716,4 +752,13 @@ extension on String {
 
 extension on UserAvatarColor {
   AvatarColor? toAvatarColor() => AvatarColor.values.firstWhereOrNull((c) => c.name == value);
+}
+
+extension on api.AssetEditAction {
+  AssetEditAction toAssetEditAction() => switch (this) {
+    api.AssetEditAction.crop => AssetEditAction.crop,
+    api.AssetEditAction.rotate => AssetEditAction.rotate,
+    api.AssetEditAction.mirror => AssetEditAction.rotate,
+    _ => AssetEditAction.other,
+  };
 }
